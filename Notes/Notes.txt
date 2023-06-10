@@ -1,0 +1,3 @@
+The adjacency cinstraint - ограничение грида на генерацию
+
+NP-complete problem - время решения растёт експоненциальнос проблемой
