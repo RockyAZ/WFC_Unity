@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Enums;
 using System;
+using UnityEngine.PlayerLoop;
 
 [Serializable]
 public class TileDirs
@@ -38,6 +39,7 @@ public class TileData : ScriptableObject
 
 			for (int j = 0; j < 4; j++)
 			{
+				Debug.Log("CRAP__tileDirs.DirTypes.Length:" + _tileDirs.DirTypes.Length);
 				tmpTileDir.DirTypes[j] = _tileDirs.DirTypes[(int)Mathf.Repeat(j + i, _tileDirs.DirTypes.Length)];
 			}
 

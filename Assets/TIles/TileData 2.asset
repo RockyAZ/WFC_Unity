@@ -14,5 +14,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   TileSprite: {fileID: 584355089, guid: 9f4fdf98a286b4241a9115477eba8bc9, type: 3}
   _tileDirs:
-    DirTypes: 01000000010000000100000001000000
+    DirTypes: 01010101
+    Sprite: {fileID: 0}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
