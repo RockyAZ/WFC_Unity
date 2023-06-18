@@ -16,8 +16,9 @@ namespace Enums
 		Left=3
 	}
 
-	public static class Enums
+	public static class EnumsValues
 	{
 		public static int TileDirAmount = Enum.GetValues(typeof(TileDir)).Length;
+		public static int TileDirTypeAmount = Enum.GetValues(typeof(TileDirType)).Length;
 	}
 }

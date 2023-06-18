@@ -72,7 +72,7 @@ public class GridSingleTile : MonoBehaviour
 
 	private TileDir RepeatTileDir(TileDir currentDir, int amountToAdd)
 	{
-		return (TileDir)UnityEngine.Mathf.Repeat((int)currentDir + amountToAdd, Enums.Enums.TileDirAmount);
+		return (TileDir)UnityEngine.Mathf.Repeat((int)currentDir + amountToAdd, Enums.EnumsValues.TileDirAmount);
 	}
 
 	public void NeighborChanged(GridSingleTile neighbor, TileDir neighborDir)
