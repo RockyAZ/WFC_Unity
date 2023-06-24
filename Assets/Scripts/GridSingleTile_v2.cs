@@ -21,14 +21,18 @@ public struct TileChangeAnswer
 [RequireComponent(typeof(SpriteRenderer))]
 public class GridSingleTile_v2 : MonoBehaviour
 {
-	private SpriteRenderer _spriteRenderer;
+	private static HashSet<GridSingleTile_v2> _pendingCells = new HashSet<GridSingleTile_v2>();
 
-	public List<TileDirs> possibleTiles = new List<TileDirs>();
+	private SpriteRenderer _spriteRenderer;
+	private Grid_v2 _grid;
+
+	//[HideInInspector]
+	public List<TileDirs> possibleTiles;
+	[HideInInspector]
 	public Vector2Int coordinates;
 
-	//foreach int[] 0-top|1-right|2-bot|3-left
-
-	public bool Solved { get; private set; }
+	public bool Solved;
+	public int PossibleTilesAmount => possibleTiles.Count;
 
 	//x = tile direction | y = tile type
 	private int[] tilesTypeAmount;
@@ -38,10 +42,16 @@ public class GridSingleTile_v2 : MonoBehaviour
 		_spriteRenderer = GetComponent<SpriteRenderer>();
 	}
 
-	public void Initialize(List<TileDirs> startTiles, Vector2Int coordinate)
+	public void Initialize(List<TileDirs> startTiles, Vector2Int coordinate, Grid_v2 grid)
 	{
-		possibleTiles.AddRange(startTiles);
+		possibleTiles = new List<TileDirs>();
+		foreach (var VARIABLE in startTiles)
+		{
+			possibleTiles.Add(VARIABLE);
+		}
+		//possibleTiles.AddRange(startTiles);
 		coordinates = coordinate;
+		_grid = grid;
 
 		tilesTypeAmount = new int[EnumsValues.TileDirAmount * EnumsValues.TileDirTypeAmount];
 
@@ -49,14 +59,24 @@ public class GridSingleTile_v2 : MonoBehaviour
 		{
 			for (int i = 0; i < tile.DirTypes.Length; i++)
 			{
-				//tilesTypeAmount[((int)tile.DirTypes[i] * EnumsValues.TileDirAmount) + i]++;
 				AddTileAmount((int)tile.DirTypes[i], i, 1);
 			}
 		}
 	}
 
-	public TileChangeAnswer SetTile(TileDirs tile)
+	public TileChangeAnswer SetTile(TileDirs tile, bool solve)
 	{
+		if (tile.Sprite == null)
+		{
+			Debug.Log("_________________");
+			Debug.Log("SetTile_PossibleTileAmount:" + possibleTiles.Count);
+			Debug.Log("tile.Top:" + tile.Top);
+			Debug.Log("tile.Right:" + tile.Right);
+			Debug.Log("tile.Bot:" + tile.Bot);
+			Debug.Log("tile.Left:" + tile.Left);
+			Debug.Log("_________________");
+		}
+
 		int[] tmpCopy = new int[tilesTypeAmount.Length];
 		int size = sizeof(int);
 		int length = tilesTypeAmount.Length * size;
@@ -66,7 +86,6 @@ public class GridSingleTile_v2 : MonoBehaviour
 
 		for (int i = 0; i < tile.DirTypes.Length; i++)
 		{
-			//tilesTypeAmount[((int)tile.DirTypes[i] * EnumsValues.TileDirAmount) + i]++;
 			AddTileAmount((int)tile.DirTypes[i], i, 1);
 		}
 
@@ -90,12 +109,27 @@ public class GridSingleTile_v2 : MonoBehaviour
 				result[i] = false;
 		}
 
+		if(solve)
+			Solve(result);
+
 		return new TileChangeAnswer(result, wasSingleEnd);
 	}
 
-	public TileChangeAnswer SetRandomPossibleTile()
+	public void SetRandomPossibleTile()
 	{
-		return SetTile(possibleTiles.GetRandomElement());
+		if (possibleTiles == null)
+			Debug.LogError("possibleTiles == null");
+		if (possibleTiles.Count < 1)
+		{
+			Debug.LogError("possibleTiles.Count < 1");
+			Debug.LogError("coord:"+coordinates);
+			Solved = true;
+			transform.parent = null;
+			return;
+		}
+
+
+		SetTile(possibleTiles.GetRandomElement(), true);
 	}
 
 	private TileDir RepeatTileDir(TileDir currentDir, int amountToAdd)
@@ -115,7 +149,7 @@ public class GridSingleTile_v2 : MonoBehaviour
 
 		foreach (var possibleTile in possibleTiles)
 		{
-			if(neighbor.GetTileAmount((int)possibleTile.DirTypes[(int)neighborDir], (int)RepeatTileDir(neighborDir, 2)) <= 0)
+			if (neighbor.GetTileAmount((int)possibleTile.DirTypes[(int)neighborDir], (int)RepeatTileDir(neighborDir, 2)) <= 0)
 			{
 				removeList.Add(possibleTile);
 			}
@@ -146,6 +180,7 @@ public class GridSingleTile_v2 : MonoBehaviour
 				result[i] = false;
 		}
 
+		Solve(result);
 		return new TileChangeAnswer(result, wasSingleEnd);
 	}
 
@@ -163,4 +198,22 @@ public class GridSingleTile_v2 : MonoBehaviour
 	{
 		return tilesTypeAmount[(dirType * EnumsValues.TileDirAmount) + tileDir];
 	}
+
+	public void Solve(bool[] resultArray)
+	{
+		_pendingCells.Add(this);
+		foreach (TileDir dir in Enum.GetValues(typeof(TileDir)))
+		{
+			if (Grid_v2.IsDirectionChanged(resultArray, dir) && Grid_v2.IsExistTile(dir, 1, coordinates))
+			{
+				var cell = _grid.GetTile(dir, 1, coordinates);
+				if (!_pendingCells.Contains(cell) && !cell.Solved)
+				{
+					cell.NeighborChanged(this, RepeatTileDir(dir, 2));
+				}
+			}
+		}
+		_pendingCells.Remove(this);
+	}
+
 }

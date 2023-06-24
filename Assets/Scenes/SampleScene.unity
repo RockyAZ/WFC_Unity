@@ -414,7 +414,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 650567627}
-  - component: {fileID: 650567628}
+  - component: {fileID: 650567629}
   m_Layer: 0
   m_Name: Grid
   m_TagString: Untagged
@@ -437,7 +437,7 @@ Transform:
   m_Father: {fileID: 0}
   m_RootOrder: 4
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &650567628
+--- !u!114 &650567629
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -446,18 +446,20 @@ MonoBehaviour:
   m_GameObject: {fileID: 650567625}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 9ca4ce4ceaaadef4fbdf210f19cadc44, type: 3}
+  m_Script: {fileID: 11500000, guid: 8a1248d3a92e16d4ca707034e04d0a43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  XSize: 10
-  YSize: 10
-  SidesAmount: 4
+  XSize: 50
+  YSize: 50
   _tiles:
   - {fileID: 11400000, guid: 1f46a47605b743e449e09d1f3a78495b, type: 2}
   - {fileID: 11400000, guid: 6f9dd17314df9b844b60a10c909b5850, type: 2}
   - {fileID: 11400000, guid: bba3d86ee8bd0574ba52b53d9dd732f2, type: 2}
-  WaitTimeToRender: 0.2
-  _tilePrefab: {fileID: 699198032758369304, guid: 0e8bc648afb1b004aad1eb3813b31eef,
+  - {fileID: 11400000, guid: caddcd100a23a1d4497bbda504d6502f, type: 2}
+  - {fileID: 11400000, guid: b0adfb5fcfe2e3147a052bccb9d5aa1a, type: 2}
+  - {fileID: 11400000, guid: 8442b3e39b891694aa222ad54dc90185, type: 2}
+  WaitTimeToRender: 0
+  _tilePrefab: {fileID: 3151336303606028297, guid: 16627ccec1bc2b44a90cac5bb76449f2,
     type: 3}
 --- !u!1 &832575517
 GameObject:

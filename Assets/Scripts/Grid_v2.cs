@@ -7,9 +7,13 @@ using Enums;
 using UnityEditor.ShaderGraph.Internal;
 using UnityEngine.Rendering;
 using EasyButtons;
+using UnityEngine.Playables;
 
 public class Grid_v2 : MonoBehaviour
 {
+	public static int X = 3;
+	public static int Y = 3;
+
 	public int XSize = 3;
 	public int YSize = 3;
 	public List<TileData> _tiles = new List<TileData>();
@@ -26,6 +30,9 @@ public class Grid_v2 : MonoBehaviour
 
 	private void Awake()
 	{
+		X = XSize;
+		Y = YSize;
+
 		foreach (var tiledata in _tiles)
 		{
 			allPossibleTiles.AddRange(tiledata.GetAllTileDirs());
@@ -38,7 +45,7 @@ public class Grid_v2 : MonoBehaviour
 			for (int y = 0; y < YSize; y++)
 			{
 				var instance = Instantiate(_tilePrefab, new Vector3(x, y, 0), Quaternion.identity, transform);
-				instance.Initialize(allPossibleTiles, new Vector2Int(x, y));
+				instance.Initialize(allPossibleTiles, new Vector2Int(x, y), this);
 				_gridTiles[x * XSize + y] = instance;
 			}
 		}
@@ -90,15 +97,54 @@ public class Grid_v2 : MonoBehaviour
 			_gridTiles[(coord.x - 1) * XSize + coord.y].NeighborChanged(tileChanged, TileDir.Right);
 	}
 
-	private bool IsDirectionChanged(bool[] result, TileDir direction)
+	public GridSingleTile_v2 GetGridTile(int x, int y)
+	{
+		return _gridTiles[x * XSize + y];
+	}
+
+	public static bool IsDirectionChanged(bool[] result, TileDir direction)
 	{
 		return result[((int)TileDirType.Grass * EnumsValues.TileDirAmount) + (int)direction] ||
-		       result[((int)TileDirType.Road * EnumsValues.TileDirAmount) + (int)direction];
+			   result[((int)TileDirType.Road * EnumsValues.TileDirAmount) + (int)direction];
 	}
+
+	public static bool IsDirectionChanged(bool[] result, int direction)
+	{
+		return result[((int)TileDirType.Grass * EnumsValues.TileDirAmount) + direction] ||
+			   result[((int)TileDirType.Road * EnumsValues.TileDirAmount) + direction];
+	}
+
+	public static bool IsExistTile(TileDir dir, int distance, Vector2Int currentCoord)
+	{
+		if (dir == TileDir.Top)
+			return currentCoord.y + distance < Y;
+		if (dir == TileDir.Right)
+			return currentCoord.x + 1 < X;
+		if (dir == TileDir.Bot)
+			return currentCoord.y - 1 >= 0;
+		if (dir == TileDir.Left)
+			return currentCoord.x - 1 >= 0;
+		return false;
+	}
+
+	public GridSingleTile_v2 GetTile(TileDir dir, int distance, Vector2Int currentCoord)
+	{
+		if (dir == TileDir.Top)
+			return GetGridTile(currentCoord.x, currentCoord.y + 1);
+		if (dir == TileDir.Right)
+			return GetGridTile(currentCoord.x + 1, currentCoord.y);
+		if (dir == TileDir.Bot)
+			return GetGridTile(currentCoord.x, currentCoord.y - 1);
+		if (dir == TileDir.Left)
+			return GetGridTile(currentCoord.x - 1, currentCoord.y);
+
+		return null;
+	}
+
 
 	private void SetFirstTile_2()
 	{
-		SetTileChanged_2(_gridTiles[0].SetRandomPossibleTile(), _gridTiles[0].coordinates);
+		_gridTiles[0].SetRandomPossibleTile();
 	}
 
 
@@ -107,27 +153,38 @@ public class Grid_v2 : MonoBehaviour
 		SetFirstTile_2();
 		while (_gridTiles.Any(t => !t.Solved))
 		{
-			yield return new WaitForSeconds(WaitTimeToRender);
-			for (int x = 0; x < XSize; x++)
+			foreach (var tile in _gridTiles)
 			{
-				for (int y = 0; y < YSize; y++)
+				if (tile.PossibleTilesAmount == 1 && !tile.Solved)
 				{
-					if (!_gridTiles[x * XSize + y].Solved)
-					{
-						_gridTiles[x * XSize + y].SetRandomPossibleTile();
-						x = XSize;
-						y = YSize;
-					}
+					tile.SetTile(tile.possibleTiles[0], false);
+				}
+			}
+
+			yield return new WaitForSeconds(WaitTimeToRender);
+
+			_gridTiles.Where(t => !t.Solved).OrderBy(t => t.PossibleTilesAmount).First().SetRandomPossibleTile();
+
+			foreach (var tile in _gridTiles)
+			{
+				if (tile.PossibleTilesAmount == 1 && !tile.Solved)
+				{
+					tile.SetTile(tile.possibleTiles[0], false);
 				}
 			}
 		}
 
 	}
 
-	private List<GridSingleTile_v2> pendingCells = new List<GridSingleTile_v2>();
-
-	void Method()
+	void CheckCell(Vector2 cell)
 	{
-		//start cell
+		/*
+		foreach direction in directions
+		{
+			if(tile changed in direction of any type changed && tile in that direction is ok[exists + not collapsed + not pending])
+				
+		}
+
+		 */
 	}
 }
