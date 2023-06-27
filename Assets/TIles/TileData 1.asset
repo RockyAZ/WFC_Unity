@@ -15,5 +15,8 @@ MonoBehaviour:
   TileSprite: {fileID: -1505909455, guid: 9f4fdf98a286b4241a9115477eba8bc9, type: 3}
   _tileDirs:
     DirTypes: 01010000
-    Sprite: {fileID: 0}
+    Sprite: {fileID: -1505909455, guid: 9f4fdf98a286b4241a9115477eba8bc9, type: 3}
     Rotation: {x: 0, y: 0, z: 0, w: 0}
+    Probability: 1
+  _probability: 0.1
+  _doNotRotate: 0

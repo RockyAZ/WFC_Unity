@@ -84,7 +84,7 @@ public class Grid : MonoBehaviour
 	}
 
 
-	private void SetFirstTile_2()
+	private void SetFirstTile()
 	{
 		_gridTiles[0].SetRandomPossibleTile();
 	}
@@ -92,7 +92,7 @@ public class Grid : MonoBehaviour
 
 	private IEnumerator SolveTiles()
 	{
-		SetFirstTile_2();
+		SetFirstTile();
 		while (_gridTiles.Any(t => !t.Solved))
 		{
 			foreach (var tile in _gridTiles)
@@ -105,7 +105,7 @@ public class Grid : MonoBehaviour
 
 			yield return new WaitForSeconds(WaitTimeToRender);
 
-			_gridTiles.Where(t => !t.Solved).OrderBy(t => t.PossibleTilesAmount).First().SetRandomPossibleTile();
+			_gridTiles.Where(t => !t.Solved).OrderBy(t => t.GetEntropy()).Last().SetLeastEntropyTile();
 
 			foreach (var tile in _gridTiles)
 			{

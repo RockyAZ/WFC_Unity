@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using UnityEngine;
 using Enums;
@@ -56,6 +57,11 @@ public class GridSingleTile : MonoBehaviour
 		}
 	}
 
+	public float GetEntropy()
+	{
+		return Extentions.CalculateEntropy(possibleTiles.Select(t => t.Probability).ToList());
+	}
+
 	public void SetTile(TileDirs tile, bool solve)
 	{
 		bool[] result = new bool[tilesTypeAmount.Length];
@@ -97,6 +103,25 @@ public class GridSingleTile : MonoBehaviour
 		}
 
 		SetTile(possibleTiles.GetRandomElement(), true);
+	}
+
+	public void SetLeastEntropyTile()
+	{
+		if (possibleTiles == null)
+			Debug.LogError("possibleTiles == null");
+		if (possibleTiles.Count < 1)
+		{
+			Debug.LogError("possibleTiles.Count < 1");
+			Debug.LogError("coord:" + coordinates);
+			Solved = true;
+			transform.parent = null;
+			return;
+		}
+
+		var maxProb = possibleTiles.Max(t => t.Probability);
+		var element = possibleTiles.Where(t => t.Probability >= maxProb).GetRandomElement();
+
+		SetTile(element, true);
 	}
 
 	private TileDir RepeatTileDir(TileDir currentDir, int amountToAdd)

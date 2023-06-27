@@ -20,6 +20,8 @@ public class TileDirs
 	public Sprite Sprite;
 	[HideInInspector]
 	public Quaternion Rotation;
+	[HideInInspector] 
+	public float Probability;
 }
 
 [CreateAssetMenu(fileName = "TileData", menuName = "ScriptableObjects/Tile", order = 1)]
@@ -34,6 +36,7 @@ public class TileData : ScriptableObject
 	{
 		List<TileDirs> resultList = new List<TileDirs>();
 		_tileDirs.Sprite = TileSprite;
+		_tileDirs.Probability = _probability;
 		resultList.Add(_tileDirs);
 		if(_doNotRotate)
 			return resultList;
@@ -45,14 +48,12 @@ public class TileData : ScriptableObject
 
 			for (int j = 0; j < 4; j++)
 			{
-				//Debug.Log("CRAP__tileDirs.DirTypes.Length:" + _tileDirs.DirTypes.Length);
 				tmpTileDir.DirTypes[j] = _tileDirs.DirTypes[(int)Mathf.Repeat(j + i, _tileDirs.DirTypes.Length)];
 			}
 
 			resultList.Add(tmpTileDir);
 			tmpTileDir.Rotation = Quaternion.Euler(0, 0, rotation);
-			if(TileSprite == null)
-				Debug.LogError("AA BLA MASLINA");
+			tmpTileDir.Probability = _probability;
 			tmpTileDir.Sprite = TileSprite;
 			rotation += 90;
 		}
