@@ -1,18 +1,16 @@
-using System;
 using System.Collections;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using Enums;
-using UnityEditor.ShaderGraph.Internal;
-using UnityEngine.Rendering;
-using EasyButtons;
 
 public class Grid : MonoBehaviour
 {
+	public static int X = 3;
+	public static int Y = 3;
+
 	public int XSize = 3;
 	public int YSize = 3;
-	public int SidesAmount = 0;
 	public List<TileData> _tiles = new List<TileData>();
 
 	System.Random _random = new System.Random();
@@ -21,23 +19,18 @@ public class Grid : MonoBehaviour
 
 	[Space] public GridSingleTile _tilePrefab;
 
-	//private int[] speedSearchArray;
-
 	private List<TileDirs> allPossibleTiles = new List<TileDirs>();
 
 	private GridSingleTile[] _gridTiles;
 
 	private void Awake()
 	{
-		//speedSearchArray = new int[XSize * YSize * _tiles.Count * SidesAmount];
-		//Array.Fill(speedSearchArray, 4);
+		X = XSize;
+		Y = YSize;
+	}
 
-		print("TileDirAmount:" + Enums.EnumsValues.TileDirAmount);
-		print((TileDir)UnityEngine.Mathf.Repeat((int)TileDir.Top + 2, Enums.EnumsValues.TileDirAmount));
-		print((TileDir)UnityEngine.Mathf.Repeat((int)TileDir.Right + 2, Enums.EnumsValues.TileDirAmount));
-		print((TileDir)UnityEngine.Mathf.Repeat((int)TileDir.Bot + 2, Enums.EnumsValues.TileDirAmount));
-		print((TileDir)UnityEngine.Mathf.Repeat((int)TileDir.Left + 2, Enums.EnumsValues.TileDirAmount));
-
+	void Start()
+	{
 		foreach (var tiledata in _tiles)
 		{
 			allPossibleTiles.AddRange(tiledata.GetAllTileDirs());
@@ -50,65 +43,75 @@ public class Grid : MonoBehaviour
 			for (int y = 0; y < YSize; y++)
 			{
 				var instance = Instantiate(_tilePrefab, new Vector3(x, y, 0), Quaternion.identity, transform);
-				instance.Initialize(allPossibleTiles, new Vector2Int(x, y));
-				instance.ON_CHANGED += SetTileChanged;
+				instance.Initialize(allPossibleTiles, new Vector2Int(x, y), this);
 				_gridTiles[x * XSize + y] = instance;
 			}
 		}
 
-		print("Grass|Grass = " + (byte)(TileDirType.Grass | TileDirType.Grass));
-		print("Grass&Grass = " + (byte)(TileDirType.Grass & TileDirType.Grass));
-		print("Grass^Grass = " + (byte)(TileDirType.Grass ^ TileDirType.Grass));
-		print("Grass|Road = " + (byte)(TileDirType.Grass | TileDirType.Road));
-		print("Grass&Road = " + (byte)(TileDirType.Grass & TileDirType.Road));
-		print("Grass^Road = " + (byte)(TileDirType.Grass ^ TileDirType.Road));
-	}
-
-	void Start()
-	{
 		StartCoroutine(SolveTiles());
 	}
 
-	private void SetTileChanged(Vector2Int coord)
+	public GridSingleTile GetGridTile(int x, int y)
 	{
-		var tileChanged = _gridTiles[coord.x * XSize + coord.y];
-		//top
-		if (!(coord.y + 1 >= YSize))
-			_gridTiles[coord.x * XSize + coord.y + 1].NeighborChanged(tileChanged, TileDir.Bot);
-		//right
-		if (!(coord.x + 1 >= XSize))
-			_gridTiles[(coord.x + 1) * XSize + coord.y].NeighborChanged(tileChanged, TileDir.Left);
-		//bot
-		if (!(coord.y - 1 < 0))
-			_gridTiles[coord.x * XSize + coord.y - 1].NeighborChanged(tileChanged, TileDir.Top);
-		//left
-		if (!(coord.x - 1 < 0))
-			_gridTiles[(coord.x - 1) * XSize + coord.y].NeighborChanged(tileChanged, TileDir.Right);
+		return _gridTiles[x * XSize + y];
 	}
 
-	private void SetFirstTile()
+	public static bool IsExistTile(TileDir dir, int distance, Vector2Int currentCoord)
 	{
-		//_gridTiles[0].SetTile(_gridTiles[0].possibleTiles.GetRandomElement(_random));
-		_gridTiles[0].SetRandomPossibleTile();
-		SetTileChanged(new Vector2Int(0, 0));
+		if (dir == TileDir.Top)
+			return currentCoord.y + distance < Y;
+		if (dir == TileDir.Right)
+			return currentCoord.x + 1 < X;
+		if (dir == TileDir.Bot)
+			return currentCoord.y - 1 >= 0;
+		if (dir == TileDir.Left)
+			return currentCoord.x - 1 >= 0;
+		return false;
 	}
+
+	public GridSingleTile GetTile(TileDir dir, int distance, Vector2Int currentCoord)
+	{
+		if (dir == TileDir.Top)
+			return GetGridTile(currentCoord.x, currentCoord.y + distance);
+		if (dir == TileDir.Right)
+			return GetGridTile(currentCoord.x + distance, currentCoord.y);
+		if (dir == TileDir.Bot)
+			return GetGridTile(currentCoord.x, currentCoord.y - distance);
+		if (dir == TileDir.Left)
+			return GetGridTile(currentCoord.x - distance, currentCoord.y);
+
+		return null;
+	}
+
+
+	private void SetFirstTile_2()
+	{
+		_gridTiles[0].SetRandomPossibleTile();
+	}
+
 
 	private IEnumerator SolveTiles()
 	{
-		SetFirstTile();
+		SetFirstTile_2();
 		while (_gridTiles.Any(t => !t.Solved))
 		{
-			yield return new WaitForSeconds(WaitTimeToRender);
-			for (int x = 0; x < XSize; x++)
+			foreach (var tile in _gridTiles)
 			{
-				for (int y = 0; y < YSize; y++)
+				if (tile.PossibleTilesAmount == 1 && !tile.Solved)
 				{
-					if (!_gridTiles[x * XSize + y].Solved)
-					{
-						_gridTiles[x * XSize + y].SetRandomPossibleTile();
-						x = XSize;
-						y = YSize;
-					}
+					tile.SetTile(tile.possibleTiles[0], false);
+				}
+			}
+
+			yield return new WaitForSeconds(WaitTimeToRender);
+
+			_gridTiles.Where(t => !t.Solved).OrderBy(t => t.PossibleTilesAmount).First().SetRandomPossibleTile();
+
+			foreach (var tile in _gridTiles)
+			{
+				if (tile.PossibleTilesAmount == 1 && !tile.Solved)
+				{
+					tile.SetTile(tile.possibleTiles[0], false);
 				}
 			}
 		}

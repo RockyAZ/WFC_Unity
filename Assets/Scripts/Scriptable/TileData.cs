@@ -16,9 +16,9 @@ public class TileDirs
 	public TileDirType Bot => DirTypes[2];
 	public TileDirType Left => DirTypes[3];
 
-	//[HideInInspector]
+	[HideInInspector]
 	public Sprite Sprite;
-	//[HideInInspector]
+	[HideInInspector]
 	public Quaternion Rotation;
 }
 
@@ -27,12 +27,17 @@ public class TileData : ScriptableObject
 {
 	public Sprite TileSprite;
 	[SerializeField] private TileDirs _tileDirs;
+	[SerializeField] private float _probability = 1;
+	[SerializeField] private bool _doNotRotate = false;
 
 	public List<TileDirs> GetAllTileDirs()
 	{
 		List<TileDirs> resultList = new List<TileDirs>();
 		_tileDirs.Sprite = TileSprite;
 		resultList.Add(_tileDirs);
+		if(_doNotRotate)
+			return resultList;
+
 		float rotation = 90;
 		for (int i = 1; i < 4; i++)
 		{

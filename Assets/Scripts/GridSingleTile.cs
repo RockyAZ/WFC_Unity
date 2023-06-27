@@ -5,55 +5,72 @@ using System.Net;
 using UnityEngine;
 using Enums;
 
-
 [RequireComponent(typeof(SpriteRenderer))]
 public class GridSingleTile : MonoBehaviour
 {
-	public Action<Vector2Int> ON_CHANGED;
+	private static HashSet<GridSingleTile> _pendingCells = new HashSet<GridSingleTile>();
 
 	private SpriteRenderer _spriteRenderer;
+	private Grid _grid;
 
-	public List<TileDirs> possibleTiles = new List<TileDirs>();
+	//[HideInInspector]
+	//domain
+	
+	//TODO
+	//use bool array instead of list
+	
+	public List<TileDirs> possibleTiles;
+	[HideInInspector]
 	public Vector2Int coordinates;
 
-	//foreach int[] 0-top|1-right|2-bot|3-left
-	//if one of int[] become 0 -> change neighbours
+	public bool Solved;
+	public int PossibleTilesAmount => possibleTiles.Count;
 
-	public bool Solved { get; private set; }
-
-	public Dictionary<TileDirType, int[]> tilesTypeAmount = new Dictionary<TileDirType, int[]>();
+	//x = tile direction | y = tile type
+	private int[] tilesTypeAmount;
 
 	void Awake()
 	{
 		_spriteRenderer = GetComponent<SpriteRenderer>();
 	}
 
-	public void Initialize(List<TileDirs> startTiles, Vector2Int coordinate)
+	public void Initialize(List<TileDirs> startTiles, Vector2Int coordinate, Grid grid)
 	{
-		possibleTiles.AddRange(startTiles);
+		possibleTiles = new List<TileDirs>();
+		foreach (var VARIABLE in startTiles)
+		{
+			possibleTiles.Add(VARIABLE);
+		}
+		//possibleTiles.AddRange(startTiles);
 		coordinates = coordinate;
+		_grid = grid;
 
-		tilesTypeAmount[TileDirType.Grass] = new int[4];
-		tilesTypeAmount[TileDirType.Road] = new int[4];
+		tilesTypeAmount = new int[EnumsValues.TileDirAmount * EnumsValues.TileDirTypeAmount];
 
 		foreach (var tile in startTiles)
 		{
 			for (int i = 0; i < tile.DirTypes.Length; i++)
 			{
-				tilesTypeAmount[tile.DirTypes[i]][i]++;
+				AddTileAmount((int)tile.DirTypes[i], i, 1);
 			}
 		}
 	}
 
-	public void SetTile(TileDirs tile)
+	public void SetTile(TileDirs tile, bool solve)
 	{
-		//possibleTiles
-		Array.Fill(tilesTypeAmount[TileDirType.Grass], 0);
-		Array.Fill(tilesTypeAmount[TileDirType.Road], 0);
+		bool[] result = new bool[tilesTypeAmount.Length];
+		Array.Fill(result, true);
+		Array.Fill(tilesTypeAmount, 0);
 
 		for (int i = 0; i < tile.DirTypes.Length; i++)
 		{
-			tilesTypeAmount[tile.DirTypes[i]][i]++;
+			int integerDirType = (int)tile.DirTypes[i];
+			AddTileAmount(integerDirType, i, 1);
+		
+			if (GetTileAmount(integerDirType, i) <= 0)
+			{
+				SetDirectionChanged(result, i, integerDirType, false);
+			}
 		}
 
 		SetSprite(tile.Sprite);
@@ -61,13 +78,25 @@ public class GridSingleTile : MonoBehaviour
 		possibleTiles.Clear();
 		possibleTiles.Add(tile);
 		Solved = true;
-		Debug.Log("SOLVED:"+coordinates);
-		//Debug.Log("tile.Sprite:" + tile.Sprite.name);
+
+		if(solve)
+			Solve(result);
 	}
 
 	public void SetRandomPossibleTile()
 	{
-		SetTile(possibleTiles.GetRandomElement());
+		if (possibleTiles == null)
+			Debug.LogError("possibleTiles == null");
+		if (possibleTiles.Count < 1)
+		{
+			Debug.LogError("possibleTiles.Count < 1");
+			Debug.LogError("coord:"+coordinates);
+			Solved = true;
+			transform.parent = null;
+			return;
+		}
+
+		SetTile(possibleTiles.GetRandomElement(), true);
 	}
 
 	private TileDir RepeatTileDir(TileDir currentDir, int amountToAdd)
@@ -77,32 +106,90 @@ public class GridSingleTile : MonoBehaviour
 
 	public void NeighborChanged(GridSingleTile neighbor, TileDir neighborDir)
 	{
-		//print((TileDir)UnityEngine.Mathf.Repeat((int)TileDir.Left + 2, Enums.Enums.TileDirAmount));
-
 		var removeList = new List<TileDirs>();
 
 		foreach (var possibleTile in possibleTiles)
 		{
-			if (neighbor.tilesTypeAmount[possibleTile.DirTypes[(int)neighborDir]][(int)RepeatTileDir(neighborDir, 2)] <= 0)
+			if (neighbor.GetTileAmount((int)possibleTile.DirTypes[(int)neighborDir], (int)RepeatTileDir(neighborDir, 2)) <= 0)
 			{
 				removeList.Add(possibleTile);
 			}
 		}
-
-		int deletedAmount = 0;
+		
+		bool[] result = new bool[tilesTypeAmount.Length];
 
 		foreach (var tileToRemove in removeList)
 		{
-			deletedAmount++;
+			for (int i = 0; i < tileToRemove.DirTypes.Length; i++)
+			{
+				int integerDirType = (int)tileToRemove.DirTypes[i];
+				int beforeRemoveAmount = GetTileAmount(integerDirType, i);
+				
+				AddTileAmount((int)tileToRemove.DirTypes[i], i, -1);
+
+				if (beforeRemoveAmount > 0 && GetTileAmount(integerDirType, i) <= 0)
+				{
+					SetDirectionChanged(result, i, integerDirType, true);
+				}
+			}
 			possibleTiles.Remove(tileToRemove);
 		}
 
-		if(deletedAmount > 0)
-			ON_CHANGED.Invoke(coordinates);
+		Solve(result);
 	}
 
 	private void SetSprite(Sprite sprite)
 	{
 		_spriteRenderer.sprite = sprite;
 	}
+
+	private void AddTileAmount(int dirType, int tileDir, int amount)
+	{
+		tilesTypeAmount[(dirType * EnumsValues.TileDirAmount) + tileDir] += amount;
+	}
+
+	public int GetTileAmount(int dirType, int tileDir)
+	{
+		return tilesTypeAmount[(dirType * EnumsValues.TileDirAmount) + tileDir];
+	}
+
+	public void Solve(bool[] resultArray)
+	{
+		_pendingCells.Add(this);
+		foreach (TileDir dir in Enum.GetValues(typeof(TileDir)))
+		{
+			if (IsDirectionChanged(resultArray, dir) && Grid.IsExistTile(dir, 1, coordinates))
+			{
+				var cell = _grid.GetTile(dir, 1, coordinates);
+				if (!_pendingCells.Contains(cell) && !cell.Solved)
+				{
+					cell.NeighborChanged(this, RepeatTileDir(dir, 2));
+				}
+			}
+		}
+		_pendingCells.Remove(this);
+	}
+
+	public static bool IsDirectionChanged(bool[] result, TileDir direction)
+	{
+		return result[((int)TileDirType.Grass * EnumsValues.TileDirAmount) + (int)direction] ||
+		       result[((int)TileDirType.Road * EnumsValues.TileDirAmount) + (int)direction];
+	}
+
+	public static bool IsDirectionChanged(bool[] result, int direction)
+	{
+		return result[((int)TileDirType.Grass * EnumsValues.TileDirAmount) + direction] ||
+		       result[((int)TileDirType.Road * EnumsValues.TileDirAmount) + direction];
+	}
+
+	public static void SetDirectionChanged(bool[] result, TileDir direction, TileDirType dirType, bool value)
+	{
+		result[((int)dirType * EnumsValues.TileDirAmount) + (int)direction] = value;
+	}
+
+	public static void SetDirectionChanged(bool[] result, int direction, int dirType, bool value)
+	{
+		result[(dirType * EnumsValues.TileDirAmount) + direction] = value;
+	}
+
 }

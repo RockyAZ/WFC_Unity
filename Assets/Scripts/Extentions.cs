@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public static class Extentions
 {
@@ -40,6 +41,34 @@ public static class Extentions
 	public static bool IsNumberInRange(this int number, int min, int max)
 	{
 		return number >= min && number <= max;
+	}
+
+	public static float CalculateEntropy(List<float> probabilities)
+	{
+		float entropy = 0;
+
+		// Check if probabilities list is empty
+		if (probabilities.Count == 0)
+		{
+			return entropy;
+		}
+
+		// Normalize probabilities to ensure their sum is 1
+		float sum = probabilities.Sum();
+		List<float> normalizedProbabilities = probabilities.Select(p => p / sum).ToList();
+
+		// Calculate entropy
+		foreach (float probability in normalizedProbabilities)
+		{
+			if (probability > 0)
+			{
+				entropy += probability * (float)Math.Log(probability, 2);
+			}
+		}
+
+		entropy *= -1; // Reverse sign
+
+		return entropy;
 	}
 
 }
